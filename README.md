@@ -3,12 +3,11 @@
 
 用法：
 
+
     HJScanViewStyle *style=[[HJScanViewStyle alloc]init];
     style.xScanRetangleOffset=100;
     style.colorRetangleLine = [UIColor whiteColor];
-    
     style.centerUpOffset = -100;
-    
     style.photoframeAngleStyle = HJScanViewPhotoframeAngleStyle_Inner;
     style.colorAngle = [UIColor redColor];
     style.retangleW = 14;
