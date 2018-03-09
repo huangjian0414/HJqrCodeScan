@@ -2,6 +2,7 @@
 一个简单的扫码
 
 用法：
+
     HJScanViewStyle *style=[[HJScanViewStyle alloc]init];
     style.xScanRetangleOffset=100;
     style.colorRetangleLine = [UIColor whiteColor];
