@@ -1,6 +1,6 @@
 # HJqrCodeScan
 一个简单的扫码
-
+```
     HJScanViewStyle *style=[[HJScanViewStyle alloc]init];
     style.xScanRetangleOffset=100;
     style.colorRetangleLine = [UIColor whiteColor];
@@ -16,3 +16,4 @@
     style.scanLineH= 8;
 
     HJScanViewController *vc=[[HJScanViewController alloc]initWithHJScanViewStyle:style];
+```
