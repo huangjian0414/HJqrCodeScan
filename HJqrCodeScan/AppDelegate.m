@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import "ViewController.h"
+#import "HJScanViewController.h"
 #import "HJScanViewStyle.h"
 @interface AppDelegate ()
 
@@ -35,11 +35,7 @@
     style.photoframeLineW = 2;
     style.scanLineH= 8;
 
-//    ViewController *vc=[[ViewController alloc]initWithHJScanViewStyle:style];
-    ViewController *vc1=[[ViewController alloc]init];
-//    vc.scanStyle=style;
-    UIViewController *vc=[[UIViewController alloc]init];
-    [vc.view addSubview:vc1.view];
+    HJScanViewController *vc=[[HJScanViewController alloc]initWithHJScanViewStyle:style];
     self.window.rootViewController=vc;
     [self.window makeKeyAndVisible];
     return YES;

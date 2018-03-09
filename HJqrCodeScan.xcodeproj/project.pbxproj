@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		7E402BE120254BCA00EB505A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7E402BE020254BCA00EB505A /* AppDelegate.m */; };
-		7E402BE420254BCA00EB505A /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7E402BE320254BCA00EB505A /* ViewController.m */; };
 		7E402BE720254BCA00EB505A /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7E402BE520254BCA00EB505A /* Main.storyboard */; };
 		7E402BE920254BCA00EB505A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E402BE820254BCA00EB505A /* Assets.xcassets */; };
 		7E402BEC20254BCA00EB505A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7E402BEA20254BCA00EB505A /* LaunchScreen.storyboard */; };
@@ -17,6 +16,7 @@
 		7E402C0420254BCA00EB505A /* HJqrCodeScanUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7E402C0320254BCA00EB505A /* HJqrCodeScanUITests.m */; };
 		7E402C122025610F00EB505A /* qrcode_scan_light_green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7E402C112025610F00EB505A /* qrcode_scan_light_green@2x.png */; };
 		7E5D6D89204AACD00053FB5B /* HJScanResult.m in Sources */ = {isa = PBXBuildFile; fileRef = 7E5D6D88204AACD00053FB5B /* HJScanResult.m */; };
+		7E5D729E2052641E0053FB5B /* HJScanViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7E5D729D2052641E0053FB5B /* HJScanViewController.m */; };
 		7EE64B6B2036BA5600D6FFF6 /* HJScanViewStyle.m in Sources */ = {isa = PBXBuildFile; fileRef = 7EE64B6A2036BA5600D6FFF6 /* HJScanViewStyle.m */; };
 /* End PBXBuildFile section */
 
@@ -41,8 +41,6 @@
 		7E402BDC20254BCA00EB505A /* HJqrCodeScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HJqrCodeScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E402BDF20254BCA00EB505A /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		7E402BE020254BCA00EB505A /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		7E402BE220254BCA00EB505A /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		7E402BE320254BCA00EB505A /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		7E402BE620254BCA00EB505A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		7E402BE820254BCA00EB505A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7E402BEB20254BCA00EB505A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -57,6 +55,8 @@
 		7E402C112025610F00EB505A /* qrcode_scan_light_green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "qrcode_scan_light_green@2x.png"; sourceTree = "<group>"; };
 		7E5D6D87204AACD00053FB5B /* HJScanResult.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HJScanResult.h; sourceTree = "<group>"; };
 		7E5D6D88204AACD00053FB5B /* HJScanResult.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HJScanResult.m; sourceTree = "<group>"; };
+		7E5D729C2052641E0053FB5B /* HJScanViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HJScanViewController.h; sourceTree = "<group>"; };
+		7E5D729D2052641E0053FB5B /* HJScanViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HJScanViewController.m; sourceTree = "<group>"; };
 		7EE64B692036BA5600D6FFF6 /* HJScanViewStyle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HJScanViewStyle.h; sourceTree = "<group>"; };
 		7EE64B6A2036BA5600D6FFF6 /* HJScanViewStyle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HJScanViewStyle.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -112,8 +112,8 @@
 				7E402C112025610F00EB505A /* qrcode_scan_light_green@2x.png */,
 				7E402BDF20254BCA00EB505A /* AppDelegate.h */,
 				7E402BE020254BCA00EB505A /* AppDelegate.m */,
-				7E402BE220254BCA00EB505A /* ViewController.h */,
-				7E402BE320254BCA00EB505A /* ViewController.m */,
+				7E5D729C2052641E0053FB5B /* HJScanViewController.h */,
+				7E5D729D2052641E0053FB5B /* HJScanViewController.m */,
 				7EE64B692036BA5600D6FFF6 /* HJScanViewStyle.h */,
 				7EE64B6A2036BA5600D6FFF6 /* HJScanViewStyle.m */,
 				7E5D6D87204AACD00053FB5B /* HJScanResult.h */,
@@ -279,7 +279,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7E402BE420254BCA00EB505A /* ViewController.m in Sources */,
+				7E5D729E2052641E0053FB5B /* HJScanViewController.m in Sources */,
 				7E402BEF20254BCA00EB505A /* main.m in Sources */,
 				7E402BE120254BCA00EB505A /* AppDelegate.m in Sources */,
 				7EE64B6B2036BA5600D6FFF6 /* HJScanViewStyle.m in Sources */,

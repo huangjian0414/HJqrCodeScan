@@ -1,20 +1,19 @@
 //
-//  ViewController.m
+//  HJScanViewController.m
 //  HJqrCodeScan
 //
-//  Created by 黄坚 on 2018/2/3.
+//  Created by 黄坚 on 2018/3/9.
 //  Copyright © 2018年 黄坚. All rights reserved.
 //
 
-#import "ViewController.h"
+#import "HJScanViewController.h"
 #import <AVFoundation/AVFoundation.h>
 #import "HJScanViewStyle.h"
 #import "HJScanResult.h"
 #define Size_W [UIScreen mainScreen].bounds.size.width
 #define Size_H [UIScreen mainScreen].bounds.size.height
 
-@interface ViewController ()<AVCaptureMetadataOutputObjectsDelegate>
-
+@interface HJScanViewController ()<AVCaptureMetadataOutputObjectsDelegate>
 @property (strong,nonatomic)AVCaptureDevice * device;
 @property (strong,nonatomic)AVCaptureDeviceInput * input;
 @property (strong,nonatomic)AVCaptureMetadataOutput * output;
@@ -30,7 +29,8 @@
 @property (nonatomic,strong)HJScanViewStyle *scanViewStyle;
 @end
 
-@implementation ViewController
+@implementation HJScanViewController
+
 -(instancetype)initWithHJScanViewStyle:(HJScanViewStyle *)style
 {
     if (self=[super init]) {
@@ -136,20 +136,20 @@
 }
 -(void)setScanView
 {
-        CAShapeLayer *layer=[CAShapeLayer layer];
-        layer.frame=_preview.bounds;
-        layer.backgroundColor=self.scanViewStyle.notRecoginitonArea.CGColor;
-        [self.view.layer addSublayer:layer];
+    CAShapeLayer *layer=[CAShapeLayer layer];
+    layer.frame=_preview.bounds;
+    layer.backgroundColor=self.scanViewStyle.notRecoginitonArea.CGColor;
+    [self.view.layer addSublayer:layer];
     
-        CAShapeLayer *scanLayer=[CAShapeLayer layer];
-        scanLayer.backgroundColor=[UIColor clearColor].CGColor;
-        scanLayer.frame=self.scanFrame;
-        scanLayer.fillColor=[UIColor clearColor].CGColor;
-        scanLayer.strokeColor=self.scanViewStyle.colorRetangleLine.CGColor;
-        scanLayer.lineWidth=self.scanViewStyle.retangleW;
-        UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectMake(0, 0, self.scanFrame.size.width, self.scanFrame.size.height)];
-        scanLayer.path = path.CGPath;
-        [self.view.layer addSublayer:scanLayer];
+    CAShapeLayer *scanLayer=[CAShapeLayer layer];
+    scanLayer.backgroundColor=[UIColor clearColor].CGColor;
+    scanLayer.frame=self.scanFrame;
+    scanLayer.fillColor=[UIColor clearColor].CGColor;
+    scanLayer.strokeColor=self.scanViewStyle.colorRetangleLine.CGColor;
+    scanLayer.lineWidth=self.scanViewStyle.retangleW;
+    UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectMake(0, 0, self.scanFrame.size.width, self.scanFrame.size.height)];
+    scanLayer.path = path.CGPath;
+    [self.view.layer addSublayer:scanLayer];
 }
 -(void)addAngel
 {
@@ -233,7 +233,7 @@
     if (_scanResult) {
         _scanResult(resultArray);
     }
-
+    
 }
 -(void)startScan
 {
@@ -243,5 +243,6 @@
 {
     [self.session stopRunning];
 }
+
 
 @end
