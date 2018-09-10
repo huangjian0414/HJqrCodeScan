@@ -54,19 +54,32 @@
     if (!self.scanViewStyle) {
         self.scanViewStyle=[[HJScanViewStyle alloc]init];
     }
-    [self setConfiger];
-    [self setUI];
+    self.view.backgroundColor=[UIColor blackColor];
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (granted) {
+                [self setConfiger];
+                [self setUI];
+            }else
+            {
+                NSLog(@"没权限");
+            }
+        });
+    }];
+   
 }
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    [self removeTimer];
+}
+//MARK: - 扫描style
 -(void)setScanStyle:(HJScanViewStyle *)scanStyle
 {
-    _scanViewStyle=scanStyle;
+    _scanStyle=scanStyle;
     self.scanViewStyle=scanStyle;
-    [self removeTimer];
-    self.lineImage=nil;
-    [self.view.layer.sublayers makeObjectsPerformSelector:@selector(removeFromSuperlayer)];
-    [self.view.layer insertSublayer:_preview atIndex:0];
-    [self setUI];
 }
+//MARK: - UI
 -(void)setUI
 {
     //设置条码位置
@@ -86,6 +99,7 @@
     }
     [self addAngel];
 }
+//MARK: - 扫描device配置
 -(void)setConfiger
 {
     _device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
@@ -120,20 +134,24 @@
     [self.view.layer insertSublayer:_preview atIndex:0];
     [_session startRunning];
 }
+//MARK: - 设置动画的线条
 -(void)setAnimotionLine
 {
     if (!self.lineImage) {
-        self.lineImage = [[UIImageView alloc]initWithFrame:CGRectMake(self.scanFrame.origin.x+self.scanViewStyle.retangleW/2, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2,self.scanFrame.size.width-self.scanViewStyle.retangleW, self.scanViewStyle.scanLineH)];
-        self.lineImage.image = self.scanViewStyle.scanImage;
+        self.lineImage=[[UIImageView alloc]init];
     }
+    self.lineImage.frame = CGRectMake(self.scanFrame.origin.x+self.scanViewStyle.retangleW/2, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2,self.scanFrame.size.width-self.scanViewStyle.retangleW, self.scanViewStyle.scanLineH);
+
+    self.lineImage.image = self.scanViewStyle.scanImage;
     [self.view addSubview:self.lineImage];
     _timer = [NSTimer scheduledTimerWithTimeInterval:2.5f
                                               target:self
                                             selector:@selector(lineAction)
                                             userInfo:nil
                                              repeats:YES];
-    [_timer fire];
+    [_timer setFireDate:[NSDate distantPast]];
 }
+//MARK: - 添加扫描view 图层
 -(void)setScanView
 {
     CAShapeLayer *layer=[CAShapeLayer layer];
@@ -151,53 +169,39 @@
     scanLayer.path = path.CGPath;
     [self.view.layer addSublayer:scanLayer];
 }
+//MARK: - 添加4个角
 -(void)addAngel
 {
     CGRect leftUpFrame=CGRectMake(self.scanFrame.origin.x+self.scanViewStyle.retangleW/2, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2, self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW);
-    UIBezierPath *leftUpPath=[UIBezierPath bezierPath];
-    [leftUpPath moveToPoint:CGPointMake(0, 0)];
-    [leftUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, 0)];
-    [leftUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeLineW)];
-    [leftUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeLineW)];
-    [leftUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW)];
-    [leftUpPath addLineToPoint:CGPointMake(0, self.scanViewStyle.photoframeAngleW)];
-    [leftUpPath closePath];
+    UIBezierPath *leftUpPath=[self setPathWithP1:CGPointMake(0, 0) P2:CGPointMake(self.scanViewStyle.photoframeAngleW, 0) P3:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeLineW) P4:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeLineW) P5:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW) P6:CGPointMake(0, self.scanViewStyle.photoframeAngleW)];
     [self setAngleWithFrame:leftUpFrame path:leftUpPath];
     
     CGRect rightUpFrame=CGRectMake(self.scanFrame.origin.x+self.scanFrame.size.width-self.scanViewStyle.retangleW/2-self.scanViewStyle.photoframeAngleW, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2, self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW);
-    UIBezierPath *rightUpPath=[UIBezierPath bezierPath];
-    [rightUpPath moveToPoint:CGPointMake(0, 0)];
-    [rightUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, 0)];
-    [rightUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW)];
-    [rightUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW)];
-    [rightUpPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeLineW)];
-    [rightUpPath addLineToPoint:CGPointMake(0, self.scanViewStyle.photoframeLineW)];
-    [rightUpPath closePath];
+    UIBezierPath *rightUpPath=[self setPathWithP1:CGPointMake(0, 0) P2:CGPointMake(self.scanViewStyle.photoframeAngleW, 0) P3:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW) P4:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW) P5:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeLineW) P6:CGPointMake(0, self.scanViewStyle.photoframeLineW)];
     [self setAngleWithFrame:rightUpFrame path:rightUpPath];
     
     CGRect leftDownFrame=CGRectMake(self.scanFrame.origin.x+self.scanViewStyle.retangleW/2, self.scanFrame.origin.y-self.scanViewStyle.retangleW/2+self.scanFrame.size.height-self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW);
-    UIBezierPath *leftDownPath=[UIBezierPath bezierPath];
-    [leftDownPath moveToPoint:CGPointMake(0, 0)];
-    [leftDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeLineW, 0)];
-    [leftDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW)];
-    [leftDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW)];
-    [leftDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW)];
-    [leftDownPath addLineToPoint:CGPointMake(0, self.scanViewStyle.photoframeAngleW)];
-    [leftDownPath closePath];
+    UIBezierPath *leftDownPath=[self setPathWithP1:CGPointMake(0, 0) P2:CGPointMake(self.scanViewStyle.photoframeLineW, 0) P3:CGPointMake(self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW) P4:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW) P5:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW) P6:CGPointMake(0, self.scanViewStyle.photoframeAngleW)];
     [self setAngleWithFrame:leftDownFrame path:leftDownPath];
     
     CGRect rightDownFrame=CGRectMake(self.scanFrame.origin.x+self.scanFrame.size.width-self.scanViewStyle.retangleW/2-self.scanViewStyle.photoframeAngleW, self.scanFrame.origin.y-self.scanViewStyle.retangleW/2+self.scanFrame.size.height-self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW);
-    UIBezierPath *rightDownPath=[UIBezierPath bezierPath];
-    [rightDownPath moveToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, 0)];
-    [rightDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, 0)];
-    [rightDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW)];
-    [rightDownPath addLineToPoint:CGPointMake(0, self.scanViewStyle.photoframeAngleW)];
-    [rightDownPath addLineToPoint:CGPointMake(0, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW)];
-    [rightDownPath addLineToPoint:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW)];
-    [rightDownPath closePath];
+    UIBezierPath *rightDownPath=[self setPathWithP1:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, 0) P2:CGPointMake(self.scanViewStyle.photoframeAngleW, 0) P3:CGPointMake(self.scanViewStyle.photoframeAngleW, self.scanViewStyle.photoframeAngleW) P4:CGPointMake(0, self.scanViewStyle.photoframeAngleW) P5:CGPointMake(0, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW) P6:CGPointMake(self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW, self.scanViewStyle.photoframeAngleW-self.scanViewStyle.photoframeLineW)];
     [self setAngleWithFrame:rightDownFrame path:rightDownPath];
     
 }
+//MARK: - 4个角路径
+-(UIBezierPath *)setPathWithP1:(CGPoint)p1 P2:(CGPoint)p2 P3:(CGPoint)p3 P4:(CGPoint)p4 P5:(CGPoint)p5 P6:(CGPoint)p6{
+    UIBezierPath *path = [UIBezierPath bezierPath];
+    [path moveToPoint:p1];
+    [path addLineToPoint:p2];
+    [path addLineToPoint:p3];
+    [path addLineToPoint:p4];
+    [path addLineToPoint:p5];
+    [path addLineToPoint:p6];
+    [path closePath];
+    return path;
+}
+//MARK: - 添加4个角图层
 -(void)setAngleWithFrame:(CGRect)frame path:(UIBezierPath *)path
 {
     CAShapeLayer *shapeLayer=[CAShapeLayer layer];
@@ -215,10 +219,7 @@
         _timer=nil;
     }
 }
--(void)dealloc
-{
-    [self removeTimer];
-}
+
 #pragma mark - AVCaptureMetadataOutputObjectsDelegate
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection
 {

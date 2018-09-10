@@ -34,8 +34,9 @@
     
     style.photoframeLineW = 2;
     style.scanLineH= 8;
-
-    HJScanViewController *vc=[[HJScanViewController alloc]initWithHJScanViewStyle:style];
+    HJScanViewController *vc = [[HJScanViewController alloc]init];
+    //vc.scanStyle=style;
+    //HJScanViewController *vc=[[HJScanViewController alloc]initWithHJScanViewStyle:style];
     self.window.rootViewController=vc;
     [self.window makeKeyAndVisible];
     return YES;
