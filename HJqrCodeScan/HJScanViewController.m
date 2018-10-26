@@ -230,6 +230,7 @@
         HJScanResult *result=[[HJScanResult alloc]init];
         result.strScanned=codeObj.stringValue;
         result.strBarCodeType=codeObj.type;
+        [resultArray addObject:result];
     }];
     if (_scanResult) {
         _scanResult(resultArray);
