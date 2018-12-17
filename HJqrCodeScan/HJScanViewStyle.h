@@ -79,4 +79,9 @@ typedef NS_ENUM(NSInteger, HJScanViewPhotoframeAngleStyle)
  扫描图片
  */
 @property (nonatomic,strong)UIImage *scanImage;
+
+/**
+ 镜头拉近是否开启 默认NO
+ */
+@property (nonatomic,assign)BOOL isVideoZoom;
 @end

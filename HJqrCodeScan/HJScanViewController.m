@@ -13,7 +13,7 @@
 #define Size_W [UIScreen mainScreen].bounds.size.width
 #define Size_H [UIScreen mainScreen].bounds.size.height
 
-@interface HJScanViewController ()<AVCaptureMetadataOutputObjectsDelegate>
+@interface HJScanViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIGestureRecognizerDelegate>
 @property (strong,nonatomic)AVCaptureDevice * device;
 @property (strong,nonatomic)AVCaptureDeviceInput * input;
 @property (strong,nonatomic)AVCaptureMetadataOutput * output;
@@ -27,6 +27,7 @@
 @property (nonatomic,weak)UIView *outputView;
 
 @property (nonatomic,strong)HJScanViewStyle *scanViewStyle;
+
 @end
 
 @implementation HJScanViewController
@@ -38,28 +39,19 @@
     }
     return self;
 }
-- (void)lineAction{
-    
-    [UIView animateWithDuration:2.4f animations:^{
-        CGRect frame = CGRectMake(self.scanFrame.origin.x+_scanViewStyle.retangleW/2, self.scanFrame.origin.y+_scanViewStyle.retangleW/2+self.scanFrame.size.width-_scanViewStyle.retangleW, self.scanFrame.size.width-_scanViewStyle.retangleW/2, _scanViewStyle.scanLineH);
-        self.lineImage.frame = frame;
-    } completion:^(BOOL finished) {
-        CGRect frame =CGRectMake(self.scanFrame.origin.x+self.scanViewStyle.retangleW/2, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2,self.scanFrame.size.width-self.scanViewStyle.retangleW, self.scanViewStyle.scanLineH);
-        self.lineImage.frame = frame;
-    }];
-}
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     if (!self.scanViewStyle) {
         self.scanViewStyle=[[HJScanViewStyle alloc]init];
     }
+    
     self.view.backgroundColor=[UIColor blackColor];
     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (granted) {
-                [self setConfiger];
                 [self setUI];
+                [self setConfiger];
             }else
             {
                 NSLog(@"没权限");
@@ -68,16 +60,14 @@
     }];
    
 }
-- (void)viewWillDisappear:(BOOL)animated
-{
-    [super viewWillDisappear:animated];
-    [self removeTimer];
-}
+
+
 //MARK: - 扫描style
 -(void)setScanStyle:(HJScanViewStyle *)scanStyle
 {
     _scanStyle=scanStyle;
     self.scanViewStyle=scanStyle;
+    
 }
 //MARK: - UI
 -(void)setUI
@@ -121,6 +111,26 @@
         [_session addOutput:_output];
     }
     
+    if ([_device lockForConfiguration:nil])
+    {
+        //自动白平衡
+        if ([_device isWhiteBalanceModeSupported:AVCaptureWhiteBalanceModeContinuousAutoWhiteBalance])
+        {
+            [_device setWhiteBalanceMode:AVCaptureWhiteBalanceModeContinuousAutoWhiteBalance];
+        }
+        //自动对焦
+        if ([_device isFocusModeSupported:AVCaptureFocusModeContinuousAutoFocus])
+        {
+            [_device setFocusMode:AVCaptureFocusModeContinuousAutoFocus];
+        }
+        //自动曝光
+        if ([_device isExposureModeSupported:AVCaptureExposureModeContinuousAutoExposure])
+        {
+            [_device setExposureMode:AVCaptureExposureModeContinuousAutoExposure];
+        }
+        [_device unlockForConfiguration];
+    }
+    
     if (TARGET_IPHONE_SIMULATOR != 1 || TARGET_OS_IPHONE != 1) {
         _output.metadataObjectTypes = @[AVMetadataObjectTypeEAN13Code,
                                         AVMetadataObjectTypeEAN8Code,
@@ -132,7 +142,7 @@
     _preview.videoGravity =AVLayerVideoGravityResizeAspectFill;
     [_preview setFrame:self.view.bounds];
     [self.view.layer insertSublayer:_preview atIndex:0];
-    [_session startRunning];
+    [self startScan];
 }
 //MARK: - 设置动画的线条
 -(void)setAnimotionLine
@@ -144,13 +154,44 @@
 
     self.lineImage.image = self.scanViewStyle.scanImage;
     [self.view addSubview:self.lineImage];
-    _timer = [NSTimer scheduledTimerWithTimeInterval:2.5f
-                                              target:self
-                                            selector:@selector(lineAction)
-                                            userInfo:nil
-                                             repeats:YES];
-    [_timer setFireDate:[NSDate distantPast]];
+    self.lineImage.hidden=YES;
+
 }
+//扫描动画
+-(CABasicAnimation*)moveAnimation
+{
+    CGPoint starPoint = CGPointMake(self.lineImage.center.x , self.scanFrame.origin.y+self.scanViewStyle.retangleW/2);
+    CGPoint endPoint = CGPointMake(self.lineImage.center.x, self.scanFrame.origin.y+self.scanViewStyle.retangleW/2+self.scanFrame.size.width-self.scanViewStyle.retangleW);
+    
+    CABasicAnimation *translation = [CABasicAnimation animationWithKeyPath:@"position"];
+    translation.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    
+    translation.fromValue = [NSValue valueWithCGPoint:starPoint];
+    translation.toValue = [NSValue valueWithCGPoint:endPoint];
+    translation.duration = 2.5f;
+    translation.repeatCount = CGFLOAT_MAX;
+    //translation.autoreverses = YES;
+    
+    return translation;
+}
+//开始扫描动画
+-(void)startAnimotion
+{
+    if (!self.scanViewStyle.isNeedScanAnim) {
+        return;
+    }
+    [self.lineImage.layer addAnimation:[self moveAnimation] forKey:@"moveAnim"];
+    self.lineImage.hidden=NO;
+}
+-(void)stopAnimotion
+{
+    if (!self.scanViewStyle.isNeedScanAnim) {
+        return;
+    }
+    self.lineImage.hidden=YES;
+    [self.lineImage.layer removeAnimationForKey:@"moveAnim"];
+}
+
 //MARK: - 添加扫描view 图层
 -(void)setScanView
 {
@@ -212,13 +253,6 @@
     shapeLayer.path=path.CGPath;
     [self.view.layer addSublayer:shapeLayer];
 }
--(void)removeTimer
-{
-    if (_timer) {
-        [_timer invalidate];
-        _timer=nil;
-    }
-}
 
 #pragma mark - AVCaptureMetadataOutputObjectsDelegate
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection
@@ -237,13 +271,16 @@
     }
     
 }
+
 -(void)startScan
 {
     [self.session startRunning];
+    [self startAnimotion];
 }
 -(void)stopScan
 {
     [self.session stopRunning];
+    [self stopAnimotion];
 }
 
 
