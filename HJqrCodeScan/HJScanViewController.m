@@ -13,7 +13,7 @@
 #define Size_W [UIScreen mainScreen].bounds.size.width
 #define Size_H [UIScreen mainScreen].bounds.size.height
 
-@interface HJScanViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIGestureRecognizerDelegate>
+@interface HJScanViewController ()<AVCaptureMetadataOutputObjectsDelegate,UIGestureRecognizerDelegate,AVCaptureVideoDataOutputSampleBufferDelegate,AVCapturePhotoCaptureDelegate>
 @property (strong,nonatomic)AVCaptureDevice * device;
 @property (strong,nonatomic)AVCaptureDeviceInput * input;
 @property (strong,nonatomic)AVCaptureMetadataOutput * output;
@@ -28,6 +28,15 @@
 
 @property (nonatomic,strong)HJScanViewStyle *scanViewStyle;
 
+@property (nonatomic,assign)BOOL isAutoOpen;
+
+@property (nonatomic, strong) AVCapturePhotoOutput *photoOutput;
+
+@property (nonatomic, assign) CGPoint centerPoint;//二维码的中心点
+
+@property (nonatomic, strong) UIView *videoPreView;
+
+@property (nonatomic,assign)BOOL bHadAutoVideoZoom;
 @end
 
 @implementation HJScanViewController
@@ -50,8 +59,8 @@
     [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (granted) {
-                [self setUI];
                 [self setConfiger];
+                [self setUI];
             }else
             {
                 NSLog(@"没权限");
@@ -99,6 +108,14 @@
     _output = [[AVCaptureMetadataOutput alloc]init];
     [_output setMetadataObjectsDelegate:self queue:dispatch_get_main_queue()];
     
+    //闪光灯
+    AVCaptureVideoDataOutput *dataOutput = [[AVCaptureVideoDataOutput alloc] init];
+    [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
+
+//    self.photoOutput = [[AVCapturePhotoOutput alloc] init];
+//    NSDictionary *outputSettings = [[NSDictionary alloc] initWithObjectsAndKeys:AVVideoCodecTypeJPEG, AVVideoCodecKey,nil];
+//    [self.photoOutput setPhotoSettingsForSceneMonitoring:[AVCapturePhotoSettings photoSettingsWithFormat:outputSettings]];
+    
     _session = [[AVCaptureSession alloc]init];
     [_session setSessionPreset:AVCaptureSessionPresetHigh];
     if ([_session canAddInput:_input])
@@ -110,6 +127,14 @@
     {
         [_session addOutput:_output];
     }
+    if ([_session canAddOutput:dataOutput])
+    {
+        [_session addOutput:dataOutput];
+    }
+//    if ([_session canAddOutput:self.photoOutput])
+//    {
+//        [_session addOutput:self.photoOutput];
+//    }
     
     if ([_device lockForConfiguration:nil])
     {
@@ -141,8 +166,15 @@
     _preview =[AVCaptureVideoPreviewLayer layerWithSession:_session];
     _preview.videoGravity =AVLayerVideoGravityResizeAspectFill;
     [_preview setFrame:self.view.bounds];
+    
+//    [self.view insertSubview:self.videoPreView atIndex:0];
+//    [self.videoPreView.layer insertSublayer:_preview atIndex:0];
+    
     [self.view.layer insertSublayer:_preview atIndex:0];
     [self startScan];
+    
+//    _bHadAutoVideoZoom=NO;
+//    [self setVideoScale:1];
 }
 //MARK: - 设置动画的线条
 -(void)setAnimotionLine
@@ -257,6 +289,14 @@
 #pragma mark - AVCaptureMetadataOutputObjectsDelegate
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection
 {
+//    if (self.scanViewStyle.isVideoZoom&&!_bHadAutoVideoZoom&&[captureOutput isKindOfClass:[AVCapturePhotoOutput class]]) {
+//        AVMetadataMachineReadableCodeObject *obj = (AVMetadataMachineReadableCodeObject *)[self.preview transformedMetadataObjectForMetadataObject:metadataObjects.lastObject];
+//        dispatch_async(dispatch_get_main_queue(), ^{
+//            [self changeVideoScale:obj];
+//        });
+//        _bHadAutoVideoZoom  =YES;
+//        return;
+//    }
     [self stopScan];
     NSMutableArray *resultArray=[NSMutableArray array];
     [metadataObjects enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -271,6 +311,91 @@
     }
     
 }
+#pragma mark - 二维码自动拉近
+
+- (void)changeVideoScale:(AVMetadataMachineReadableCodeObject *)objc
+{
+    NSArray *array = objc.corners;
+    NSLog(@"cornersArray = %@",array);
+    CGPoint point = CGPointZero;
+    // 把字典转换为点，存在point里，成功返回true 其他false
+    CGPointMakeWithDictionaryRepresentation((__bridge CFDictionaryRef)array[0], &point);
+    
+    NSLog(@"X:%f -- Y:%f",point.x,point.y);
+    CGPoint point2 = CGPointZero;
+    CGPointMakeWithDictionaryRepresentation((__bridge CFDictionaryRef)array[2], &point2);
+    NSLog(@"X:%f -- Y:%f",point2.x,point2.y);
+    
+    self.centerPoint = CGPointMake((point.x + point2.x) / 2, (point.y + point2.y) / 2);
+    CGFloat scace = 150 / (point2.x - point.x); //当二维码图片宽小于150，进行放大
+    [self setVideoScale:scace];
+}
+- (void)setVideoScale:(CGFloat)scale
+{
+    [self.input.device lockForConfiguration:nil];
+    
+    AVCaptureConnection *videoConnection = [self connectionWithMediaType:AVMediaTypeVideo fromConnections:[[self photoOutput] connections]];
+    CGFloat maxScaleAndCropFactor = ([[self.photoOutput connectionWithMediaType:AVMediaTypeVideo] videoMaxScaleAndCropFactor])/16;
+    
+    if (scale > maxScaleAndCropFactor){
+        scale = maxScaleAndCropFactor;
+    }else if (scale < 1){
+        scale = 1;
+    }
+    
+    CGFloat zoom = scale / videoConnection.videoScaleAndCropFactor;
+    videoConnection.videoScaleAndCropFactor = scale;
+    
+    [self.input.device unlockForConfiguration];
+    
+    CGAffineTransform transform = self.videoPreView.transform;
+    
+    //自动拉近放大
+    if (scale == 1) {
+        self.videoPreView.transform = CGAffineTransformScale(transform, zoom, zoom);
+        CGRect rect = self.videoPreView.frame;
+        rect.origin = CGPointZero;
+        self.videoPreView.frame = rect;
+    } else {
+        CGFloat x = self.videoPreView.center.x - self.centerPoint.x;
+        CGFloat y = self.videoPreView.center.y - self.centerPoint.y;
+        CGRect rect = self.videoPreView.frame;
+        rect.origin.x = rect.size.width / 2.0 * (1 - scale);
+        rect.origin.y = rect.size.height / 2.0 * (1 - scale);
+        rect.origin.x += x * zoom;
+        rect.origin.y += y * zoom;
+        rect.size.width = rect.size.width * scale;
+        rect.size.height = rect.size.height * scale;
+        
+        [UIView animateWithDuration:.5f animations:^{
+            self.videoPreView.transform = CGAffineTransformScale(transform, zoom, zoom);
+            self.videoPreView.frame = rect;
+        } completion:^(BOOL finished) {
+        }];
+        NSLog(@"hehe -- %lf,%lf,%lf,%lf",rect.origin.x,rect.origin.y,rect.size.width,rect.size.height);
+    }
+    
+    NSLog(@"放大%f",zoom);
+}
+- (UIView *)videoPreView{
+    if (!_videoPreView) {
+        UIView *videoView = [[UIView alloc]initWithFrame:self.view.bounds];
+        videoView.backgroundColor = [UIColor clearColor];
+        _videoPreView = videoView;
+    }
+    return _videoPreView;
+}
+- (AVCaptureConnection *)connectionWithMediaType:(NSString *)mediaType fromConnections:(NSArray *)connections
+{
+    for ( AVCaptureConnection *connection in connections ) {
+        for ( AVCaptureInputPort *port in [connection inputPorts] ) {
+            if ( [[port mediaType] isEqual:mediaType] ) {
+                return connection;
+            }
+        }
+    }
+    return nil;
+}
 
 -(void)startScan
 {
@@ -283,5 +408,41 @@
     [self stopAnimotion];
 }
 
+#pragma mark - AVCaptureVideoDataOutputSampleBufferDelegate
 
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection{
+    CFDictionaryRef metadataDict = CMCopyDictionaryOfAttachments(NULL,sampleBuffer, kCMAttachmentMode_ShouldPropagate);
+    NSDictionary *metadata = [[NSMutableDictionary alloc] initWithDictionary:(__bridge NSDictionary*)metadataDict];
+    CFRelease(metadataDict);
+    NSDictionary *exifMetadata = [[metadata objectForKey:(NSString *)kCGImagePropertyExifDictionary] mutableCopy];
+    float brightnessValue = [[exifMetadata objectForKey:(NSString *)kCGImagePropertyExifBrightnessValue] floatValue];
+    
+    if (!self.scanViewStyle.isAutoFlash) {
+        return;
+    }
+    // brightnessValue 值代表光线强度，值越小代表光线越暗
+    if (brightnessValue <= self.scanViewStyle.autoFlashBrightness && !_isAutoOpen) {
+        [self turnTorchOn:YES];
+    }else if(brightnessValue > self.scanViewStyle.autoFlashBrightness && _isAutoOpen)
+    {
+        [self turnTorchOn:NO];
+    }
+    NSLog(@"brightness --  %lf",brightnessValue);
+}
+// 打开/关闭手电筒
+- (void)turnTorchOn:(BOOL)on{
+    if ([self.device hasTorch] && [self.device hasFlash]){
+        
+        [self.device lockForConfiguration:nil];
+        if (on) {
+            [self.device setTorchMode:AVCaptureTorchModeOn];
+        } else {
+            [self.device setTorchMode:AVCaptureTorchModeOff];
+        }
+        _isAutoOpen=on;
+        [self.device unlockForConfiguration];
+    } else {
+        NSLog(@"当前设备没有闪光灯，不能提供手电筒功能");
+    }
+}
 @end

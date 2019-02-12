@@ -84,4 +84,16 @@ typedef NS_ENUM(NSInteger, HJScanViewPhotoframeAngleStyle)
  镜头拉近是否开启 默认NO
  */
 @property (nonatomic,assign)BOOL isVideoZoom;
+
+
+/**
+ 自动开启闪光灯 默认NO
+ */
+@property (nonatomic,assign)BOOL isAutoFlash;
+
+
+/**
+ 自动开启闪光灯的亮度值， 默认-2 ，值越小光线越暗
+ */
+@property (nonatomic,assign)CGFloat autoFlashBrightness;
 @end

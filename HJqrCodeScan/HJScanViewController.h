@@ -19,4 +19,7 @@ typedef void(^ScanResult)(NSArray<HJScanResult *>*);
 
 -(void)startScan;
 -(void)stopScan;
+
+//打开或关闭闪光灯
+- (void)turnTorchOn:(BOOL)on;
 @end

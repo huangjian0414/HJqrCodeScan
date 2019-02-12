@@ -29,6 +29,7 @@
         _scanLineH= 8;
         _isNeedScanAnim=YES;
         _scanImage=[UIImage imageNamed:@"qrcode_scan_light_green@2x"];
+        _autoFlashBrightness=-2;
     }
     return self;
 }
