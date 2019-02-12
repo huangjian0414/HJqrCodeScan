@@ -81,10 +81,15 @@ typedef NS_ENUM(NSInteger, HJScanViewPhotoframeAngleStyle)
 @property (nonatomic,strong)UIImage *scanImage;
 
 /**
- 镜头拉近是否开启 默认NO
+ 扫描到二维码镜头拉近效果是否开启 默认NO   与isGesZoom 互斥
  */
 @property (nonatomic,assign)BOOL isVideoZoom;
 
+
+/**
+ 手势拉近放大是否开启。 默认NO    与isVideoZoom 互斥
+ */
+@property (nonatomic,assign)BOOL isGesZoom;
 
 /**
  自动开启闪光灯 默认NO

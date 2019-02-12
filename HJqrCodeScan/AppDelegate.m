@@ -34,8 +34,8 @@
     
     style.photoframeLineW = 2;
     style.scanLineH= 8;
-    style.isVideoZoom=YES;
-    
+    //style.isVideoZoom=YES;
+    style.isGesZoom=YES;
     HJScanViewController *vc=[[HJScanViewController alloc]initWithHJScanViewStyle:style];
     self.window.rootViewController=vc;
     [self.window makeKeyAndVisible];

@@ -29,8 +29,22 @@
         _scanLineH= 8;
         _isNeedScanAnim=YES;
         _scanImage=[UIImage imageNamed:@"qrcode_scan_light_green@2x"];
+        
+        _isVideoZoom=NO;
+        _isGesZoom=NO;
+        _isAutoFlash=NO;
         _autoFlashBrightness=-2;
     }
     return self;
+}
+-(void)setIsGesZoom:(BOOL)isGesZoom
+{
+    _isGesZoom=isGesZoom;
+    _isVideoZoom=!isGesZoom;
+}
+-(void)setIsVideoZoom:(BOOL)isVideoZoom
+{
+    _isVideoZoom=isVideoZoom;
+    _isGesZoom=!isVideoZoom;
 }
 @end

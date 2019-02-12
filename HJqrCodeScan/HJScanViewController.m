@@ -28,7 +28,7 @@
 
 @property (nonatomic,strong)HJScanViewStyle *scanViewStyle;
 
-@property (nonatomic,assign)BOOL isAutoOpen;
+@property (nonatomic,assign)BOOL isAutoOpen;//闪光灯是否开着
 
 @property (nonatomic, strong) AVCapturePhotoOutput *photoOutput;
 
@@ -36,7 +36,16 @@
 
 @property (nonatomic, strong) UIView *videoPreView;
 
-@property (nonatomic,assign)BOOL bHadAutoVideoZoom;
+@property (nonatomic,assign)BOOL bHadAutoVideoZoom;//是否已经放大
+
+
+///记录开始的缩放比例
+@property(nonatomic,assign)CGFloat beginGestureScale;
+///最后的缩放比例
+@property(nonatomic,assign)CGFloat effectiveScale;
+
+@property(nonatomic,strong)UIPinchGestureRecognizer *pinch;
+
 @end
 
 @implementation HJScanViewController
@@ -112,9 +121,9 @@
     AVCaptureVideoDataOutput *dataOutput = [[AVCaptureVideoDataOutput alloc] init];
     [dataOutput setSampleBufferDelegate:self queue:dispatch_get_main_queue()];
 
-//    self.photoOutput = [[AVCapturePhotoOutput alloc] init];
-//    NSDictionary *outputSettings = [[NSDictionary alloc] initWithObjectsAndKeys:AVVideoCodecTypeJPEG, AVVideoCodecKey,nil];
-//    [self.photoOutput setPhotoSettingsForSceneMonitoring:[AVCapturePhotoSettings photoSettingsWithFormat:outputSettings]];
+    self.photoOutput = [[AVCapturePhotoOutput alloc] init];
+    NSDictionary *outputSettings = [[NSDictionary alloc] initWithObjectsAndKeys:AVVideoCodecTypeJPEG, AVVideoCodecKey,nil];
+    [self.photoOutput setPhotoSettingsForSceneMonitoring:[AVCapturePhotoSettings photoSettingsWithFormat:outputSettings]];
     
     _session = [[AVCaptureSession alloc]init];
     [_session setSessionPreset:AVCaptureSessionPresetHigh];
@@ -131,10 +140,10 @@
     {
         [_session addOutput:dataOutput];
     }
-//    if ([_session canAddOutput:self.photoOutput])
-//    {
-//        [_session addOutput:self.photoOutput];
-//    }
+    if ([_session canAddOutput:self.photoOutput])
+    {
+        [_session addOutput:self.photoOutput];
+    }
     
     if ([_device lockForConfiguration:nil])
     {
@@ -167,14 +176,11 @@
     _preview.videoGravity =AVLayerVideoGravityResizeAspectFill;
     [_preview setFrame:self.view.bounds];
     
-//    [self.view insertSubview:self.videoPreView atIndex:0];
-//    [self.videoPreView.layer insertSublayer:_preview atIndex:0];
+    [self.view insertSubview:self.videoPreView atIndex:0];
+    [self.videoPreView.layer insertSublayer:_preview atIndex:0];
     
-    [self.view.layer insertSublayer:_preview atIndex:0];
+//    [self.view.layer insertSublayer:_preview atIndex:0];
     [self startScan];
-    
-//    _bHadAutoVideoZoom=NO;
-//    [self setVideoScale:1];
 }
 //MARK: - 设置动画的线条
 -(void)setAnimotionLine
@@ -289,14 +295,14 @@
 #pragma mark - AVCaptureMetadataOutputObjectsDelegate
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection
 {
-//    if (self.scanViewStyle.isVideoZoom&&!_bHadAutoVideoZoom&&[captureOutput isKindOfClass:[AVCapturePhotoOutput class]]) {
-//        AVMetadataMachineReadableCodeObject *obj = (AVMetadataMachineReadableCodeObject *)[self.preview transformedMetadataObjectForMetadataObject:metadataObjects.lastObject];
-//        dispatch_async(dispatch_get_main_queue(), ^{
-//            [self changeVideoScale:obj];
-//        });
-//        _bHadAutoVideoZoom  =YES;
-//        return;
-//    }
+    if (self.scanViewStyle.isVideoZoom&&!_bHadAutoVideoZoom) {
+        AVMetadataMachineReadableCodeObject *obj = (AVMetadataMachineReadableCodeObject *)[self.preview transformedMetadataObjectForMetadataObject:metadataObjects.lastObject];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self changeVideoScale:obj];
+        });
+        _bHadAutoVideoZoom  =YES;
+        return;
+    }
     [self stopScan];
     NSMutableArray *resultArray=[NSMutableArray array];
     [metadataObjects enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
@@ -309,7 +315,9 @@
     if (_scanResult) {
         _scanResult(resultArray);
     }
-    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self startScan];
+    });
 }
 #pragma mark - 二维码自动拉近
 
@@ -367,6 +375,8 @@
         rect.size.width = rect.size.width * scale;
         rect.size.height = rect.size.height * scale;
         
+        rect.origin.y-=self.scanViewStyle.centerUpOffset;
+        
         [UIView animateWithDuration:.5f animations:^{
             self.videoPreView.transform = CGAffineTransformScale(transform, zoom, zoom);
             self.videoPreView.frame = rect;
@@ -396,16 +406,33 @@
     }
     return nil;
 }
-
+//MARK: - 开始/停止扫描
 -(void)startScan
 {
     [self.session startRunning];
     [self startAnimotion];
+    _bHadAutoVideoZoom=NO;
+    if (self.scanViewStyle.isVideoZoom) {
+        [self setVideoScale:1];
+    }
+    if (self.scanViewStyle.isGesZoom) {
+        [self cameraInitOver];
+        [self setVideoScale1:1];
+        self.effectiveScale=1;
+        self.beginGestureScale=0;
+    }
+    if (self.videoPreView) {
+        self.videoPreView.frame=self.view.bounds;
+    }
 }
 -(void)stopScan
 {
     [self.session stopRunning];
     [self stopAnimotion];
+    if (self.pinch) {
+        [self.videoPreView removeGestureRecognizer:self.pinch];
+        self.pinch=nil;
+    }
 }
 
 #pragma mark - AVCaptureVideoDataOutputSampleBufferDelegate
@@ -445,4 +472,56 @@
         NSLog(@"当前设备没有闪光灯，不能提供手电筒功能");
     }
 }
+
+//MARK: - 手势拉近放大
+- (void)cameraInitOver
+{
+    if (self.scanViewStyle.isGesZoom) {
+        UIPinchGestureRecognizer *pinch = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinchDetected:)];
+        pinch.delegate = self;
+        [self.videoPreView addGestureRecognizer:pinch];
+        self.pinch=pinch;
+    }
+}
+
+- (void)pinchDetected:(UIPinchGestureRecognizer*)recogniser
+{
+    self.effectiveScale = self.beginGestureScale * recogniser.scale;
+    if (self.effectiveScale < 1.0){
+        self.effectiveScale = 1.0;
+    }
+    [self setVideoScale1:self.effectiveScale];
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    if ( [gestureRecognizer isKindOfClass:[UIPinchGestureRecognizer class]] ) {
+        _beginGestureScale = _effectiveScale;
+    }
+    return YES;
+}
+- (void)setVideoScale1:(CGFloat)scale
+{
+    [_input.device lockForConfiguration:nil];
+    
+    AVCaptureConnection *videoConnection = [self connectionWithMediaType:AVMediaTypeVideo fromConnections:[[self photoOutput] connections]];
+    CGFloat maxScaleAndCropFactor = ([[self.photoOutput connectionWithMediaType:AVMediaTypeVideo] videoMaxScaleAndCropFactor])/16;
+    
+    if (scale > maxScaleAndCropFactor)
+        scale = maxScaleAndCropFactor;
+    
+    CGFloat zoom = scale / videoConnection.videoScaleAndCropFactor;
+    
+    videoConnection.videoScaleAndCropFactor = scale;
+    
+    [_input.device unlockForConfiguration];
+    
+    CGAffineTransform transform = _videoPreView.transform;
+    [CATransaction begin];
+    [CATransaction setAnimationDuration:.025];
+    _videoPreView.transform = CGAffineTransformScale(transform, zoom, zoom);
+    [CATransaction commit];
+    
+}
+
 @end
