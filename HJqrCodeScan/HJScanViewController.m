@@ -70,6 +70,7 @@
             if (granted) {
                 [self setConfiger];
                 [self setUI];
+                [self startScan];
             }else
             {
                 NSLog(@"没权限");
@@ -180,7 +181,7 @@
     [self.videoPreView.layer insertSublayer:_preview atIndex:0];
     
 //    [self.view.layer insertSublayer:_preview atIndex:0];
-    [self startScan];
+//    [self startScan];
 }
 //MARK: - 设置动画的线条
 -(void)setAnimotionLine
@@ -315,7 +316,7 @@
     if (_scanResult) {
         _scanResult(resultArray);
     }
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self startScan];
     });
 }
